@@ -229,6 +229,119 @@ var fixtures = {
       '\n' +
       '}'
     ]
+  },
+
+  'IfStatement': {
+    'singe line if, no alternate': [
+      'if(a)b;',
+      'if (a)b;',
+      'if (a) b;',
+
+      'if(a){b;}',
+      'if(a) {b;}',
+      'if(a) { b;}',
+      'if(a) {b; }',
+      'if(a) { b; }',
+    ],
+
+    'single line if, with alternate': [
+      'if(a){b;}else c;',
+      'if(a){b;} else c;',
+      'if (a) {b;} else {c;}',
+      'if (a) {b;} else { c;}',
+      'if (a) {b;} else {c; }',
+      'if (a) {b;} else { c; }'
+    ],
+
+    'multi line if, no alternate': [
+      'if(a)\n' +
+      'b;',
+
+      'if (a)\n' +
+      'b;',
+
+      'if (a)\n' +
+      '  b;',
+
+      'if (a) {\n' +
+      '}',
+
+      'if (a) {\n' +
+      '\n' +
+      '}',
+
+      'if (a) {\n' +
+      'b;' +
+      '}',
+
+      'if (a) {\n' +
+      '  b;' +
+      '}',
+
+      'if (a) {\n' +
+      '\n' +
+      '  b;' +
+      '\n' +
+      '}'
+    ],
+
+    'multi line if, with alternate': [
+      'if (a) {\n' +
+      '  b;\n' +
+      '}else c;',
+
+      'if (a) {\n' +
+      '  b;\n' +
+      '}\n' +
+      'else c;',
+
+      'if (a) {\n' +
+      '  b;\n' +
+      '}\n' +
+      '\n' +
+      'else c;',
+
+      'if (a) {\n' +
+      '  b;\n' +
+      '} else {c;}',
+
+      'if (a) {\n' +
+      '  b;\n' +
+      '} else { c;}',
+
+      'if (a) {\n' +
+      '  b;\n' +
+      '} else {c; }',
+
+      'if (a) {\n' +
+      '  b;\n' +
+      '} else { c; }',
+
+      'if (a) {\n' +
+      '  b;\n' +
+      '}\n' +
+      '\n' +
+      'else {c;}',
+
+      'if (a) {\n' +
+      '  b;\n' +
+      '}\n' +
+      'else {c;}',
+
+      'if (a) {\n' +
+      '  b;\n' +
+      '}\n' +
+      'else {\n' +
+      '  c;\n' +
+      '}',
+
+      'if (a) {\n' +
+      '  b;\n' +
+      '}\n' +
+      'else {\n' +
+      '  c;\n' +
+      '}'
+    ]
   }
 };
 

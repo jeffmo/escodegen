@@ -869,9 +869,12 @@
     }
 
     function maybeBlockSuffix(stmt, result) {
-        var ends = endsWithLineTerminator(toSourceNode(result).toString());
+        var ends = endsWithLineTerminator(toSourceNode(result).toString()), ret = [result];
         if (stmt.type === Syntax.BlockStatement && (!extra.comment || !stmt.leadingComments) && !ends) {
-            return [result, space];
+            if (!preserveLocInfo) {
+                ret.push(space);
+            }
+            return ret;
         }
         if (ends) {
             return [result, base];
@@ -1852,24 +1855,84 @@
             break;
 
         case Syntax.IfStatement:
-            withIndent(function () {
-                result = [
-                    'if' + space + '(',
+            var generateIfStmtTest = function () {
+                result = ['if'];
+                if (preserveLocInfo) {
+                    result.push(padWhitespace(
+                        stmt.loc.start.line,
+                        'if'.length,
+                        stmt.test.loc.start.line,
+                        stmt.test.loc.start.column - 1
+                    ));
+                } else {
+                    result.push(space);
+                }
+                result.push(
+                    '(',
                     generateExpression(stmt.test, {
                         precedence: Precedence.Sequence,
                         allowIn: true,
                         allowCall: true
                     }),
                     ')'
-                ];
-            });
+                );
+                if (preserveLocInfo) {
+                    result.push(padWhitespaceTo(
+                        stmt.test.loc.end.line,
+                        stmt.test.loc.end.column + 1,
+                        stmt.consequent.loc.start
+                    ));
+                }
+            };
+
+            if (preserveLocInfo) {
+                generateIfStmtTest();
+            } else {
+                withIndent(generateIfStmtTest);
+            }
+
             if (stmt.alternate) {
                 result.push(maybeBlock(stmt.consequent));
                 result = maybeBlockSuffix(stmt.consequent, result);
+
                 if (stmt.alternate.type === Syntax.IfStatement) {
-                    result = join(result, ['else ', generateStatement(stmt.alternate, {semicolonOptional: semicolon === ''})]);
+                    fragment = generateStatement(stmt.alternate, {semicolonOptional: semicolon === ''});
+                    result = join(result, ['else ', fragment]);
                 } else {
-                    result = join(result, join('else', maybeBlock(stmt.alternate, semicolon === '')));
+                    fragment = maybeBlock(stmt.alternate, semicolon === '');
+                    if (preserveLocInfo) {
+                        if (stmt.alternate.loc.start.line === stmt.consequent.loc.end.line) {
+                            result.push(padWhitespace(
+                                stmt.consequent.loc.end.line,
+                                stmt.consequent.loc.end.column + 1,
+                                stmt.alternate.loc.start.line,
+                                stmt.alternate.loc.start.column - 'else'.length
+                            ), 'else');
+                            if (stmt.alternate.type === Syntax.ExpressionStatement) {
+                                result.push(' ');
+                            } else {
+                                result.push(padWhitespace(
+                                    stmt.consequent.loc.end.line,
+                                    stmt.consequent.loc.end.column + 1 + 'else'.length,
+                                    stmt.alternate.loc.start.line,
+                                    stmt.alternate.loc.start.column
+                                ));
+                            }
+                        } else {
+                            result.push(padWhitespace(
+                                stmt.consequent.loc.end.line,
+                                stmt.consequent.loc.end.column,
+                                stmt.alternate.loc.start.line,
+                                stmt.alternate.loc.start.column - 'else '.length
+                            ), 'else ');
+                            if (stmt.alternate.type === Syntax.ExpressionStatement) {
+
+                            }
+                        }
+                        result.push(fragment);
+                    } else {
+                      result = join(result, join('else', fragment));
+                    }
                 }
             } else {
                 result.push(maybeBlock(stmt.consequent, semicolon === ''));
