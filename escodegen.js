@@ -59,7 +59,8 @@
         extra,
         parse,
         sourceMap,
-        traverse;
+        traverse,
+        preserveLocInfo;
 
     traverse = require('estraverse').traverse;
 
@@ -188,7 +189,8 @@
                 compact: false,
                 parentheses: true,
                 semicolons: true,
-                safeConcatenation: false
+                safeConcatenation: false,
+                preserveLocInfo: false
             },
             moz: {
                 starlessGenerator: false,
@@ -786,22 +788,82 @@
         return text;
     }
 
+    function padWhitespace(/*text, */startLine, startCol, endLine, endCol) {
+      var whitespace = '', i;
+      for (i = startLine; i < endLine; i++) {
+          whitespace += '\n';
+      }
+      if (startLine === endLine) {
+        for (i = startCol; i < endCol; i++) {
+            whitespace += ' ';
+        }
+      } else {
+        for (i = 0; i < endCol; i++) {
+            whitespace += ' ';
+        }
+      }
+      return whitespace;
+//      return text + whitespace;
+    }
+
+    function padWhitespaceFrom(/*text, */startLoc, endLine, endCol) {
+      return padWhitespace(
+//        text,
+        startLoc.line,
+        startLoc.column,
+        endLine,
+        endCol
+      );
+    }
+
+    function padWhitespaceTo(/*text, */startLine, startCol, endLoc) {
+      return padWhitespace(
+//        text,
+        startLine,
+        startCol,
+        endLoc.line,
+        endLoc.column
+      );
+    }
+
+    function padWhitespaceFromTo(/*text, */startLoc, endLoc) {
+      return padWhitespace(
+//        text,
+        startLoc.line,
+        startLoc.column,
+        endLoc.line,
+        endLoc.column
+      );
+    }
+
     function maybeBlock(stmt, semicolonOptional, functionBody) {
-        var result, noLeadingComment;
+        var result = [], noLeadingComment, generatedStmt;
 
         noLeadingComment = !extra.comment || !stmt.leadingComments;
 
         if (stmt.type === Syntax.BlockStatement && noLeadingComment) {
-            return [space, generateStatement(stmt, { functionBody: functionBody })];
+            if (!preserveLocInfo) {
+                result.push(space);
+            }
+            result.push(generateStatement(stmt, { functionBody: functionBody }));
+            return result;
         }
 
         if (stmt.type === Syntax.EmptyStatement && noLeadingComment) {
             return ';';
         }
 
-        withIndent(function () {
-            result = [newline, addIndent(generateStatement(stmt, { semicolonOptional: semicolonOptional, functionBody: functionBody }))];
+        generatedStmt = generateStatement(stmt, {
+            semicolonOptional: semicolonOptional,
+            functionBody: functionBody
         });
+        if (preserveLocInfo) {
+            result.push(generatedStmt);
+        } else {
+            withIndent(function () {
+                result.push(newline, addIndent(generatedStmt));
+            });
+        }
 
         return result;
     }
@@ -829,15 +891,56 @@
     }
 
     function generateFunctionBody(node) {
-        var result, i, len, expr;
+        var result, i, len, expr, param;
+
         result = ['('];
+        if (preserveLocInfo && node.params.length > 0) {
+            result.push(padWhitespaceTo(
+                node.id.loc.end.line,
+                node.id.loc.end.column + 1,
+                node.params[0].loc.start
+            ));
+        }
         for (i = 0, len = node.params.length; i < len; i += 1) {
-            result.push(node.params[i].name);
+            param = node.params[i];
+            result.push(param.name);
             if (i + 1 < len) {
-                result.push(',' + space);
+                if (preserveLocInfo) {
+                    result.push(',' + padWhitespaceFrom(
+                        param.loc.end,
+                        node.params[i + 1].loc.start.line,
+                        node.params[i + 1].loc.start.column - 1
+                    ));
+                } else {
+                    result.push(',' + space);
+                }
             }
         }
         result.push(')');
+
+        if (preserveLocInfo) {
+            if (node.params.length > 0) {
+                // Unfortunately there isn't enough information in the AST to
+                // determine where newlines between the last param and the body
+                // of a function go (are they before the closing paren? or
+                // between the closing paren and the opening curly?)
+                //
+                // So we just assume that newlines between the last paren and
+                // the body exist between the closing paren and the opening
+                // curly.
+                result.push(padWhitespaceTo(
+                    param.loc.end.line,
+                    param.loc.end.column + 1,
+                    node.body.loc.start
+                ));
+            } else {
+                result.push(padWhitespaceFrom(
+                    node.id.loc.end,
+                    node.body.loc.start.line,
+                    node.body.loc.start.column - 2
+                ));
+            }
+        }
 
         if (node.expression) {
             result.push(space);
@@ -1472,22 +1575,54 @@
 
         switch (stmt.type) {
         case Syntax.BlockStatement:
-            result = ['{', newline];
+            result = ['{'];
+            if (preserveLocInfo) {
+                if (stmt.body.length > 0) {
+                    result.push(padWhitespaceTo(
+                        stmt.loc.start.line,
+                        stmt.loc.start.column + 1,
+                        stmt.body[0].loc.start
+                    ));
+                }
+            } else {
+                result.push(newline);
+            }
 
             withIndent(function () {
                 for (i = 0, len = stmt.body.length; i < len; i += 1) {
-                    fragment = addIndent(generateStatement(stmt.body[i], {
+                    fragment = generateStatement(stmt.body[i], {
                         semicolonOptional: i === len - 1,
                         directiveContext: functionBody
-                    }));
+                    });
+                    if (!preserveLocInfo) {
+                        fragment = addIndent(fragment);
+                    }
                     result.push(fragment);
-                    if (!endsWithLineTerminator(toSourceNode(fragment).toString())) {
+                    if (!preserveLocInfo && !endsWithLineTerminator(toSourceNode(fragment).toString())) {
                         result.push(newline);
                     }
                 }
             });
 
-            result.push(addIndent('}'));
+            if (preserveLocInfo) {
+                if (stmt.body.length > 0) {
+                    result.push(padWhitespaceFrom(
+                        stmt.body[stmt.body.length - 1].loc.end,
+                        stmt.loc.end.line,
+                        stmt.loc.end.column - 1
+                    ));
+                } else {
+                    result.push(padWhitespace(
+                        stmt.loc.start.line,
+                        stmt.loc.start.column + 1,
+                        stmt.loc.end.line,
+                        stmt.loc.end.column - 1
+                    ));
+                }
+                result.push('}');
+            } else {
+                result.push(addIndent('}'));
+            }
             break;
 
         case Syntax.BreakStatement:
@@ -1742,8 +1877,41 @@
             break;
 
         case Syntax.ForStatement:
-            withIndent(function () {
-                result = ['for' + space + '('];
+            var generateForStatement = function () {
+                result = ['for'];
+                if (preserveLocInfo) {
+                    if (stmt.init) {
+                        result.push(padWhitespace(
+                            stmt.loc.start.line,
+                            'for'.length,
+                            stmt.init.loc.start.line,
+                            stmt.init.loc.start.column - '('.length
+                        ));
+                    } else if (stmt.test) {
+                        result.push(padWhitespace(
+                            stmt.loc.start.line,
+                            'for'.length,
+                            stmt.test.loc.start.line,
+                            stmt.test.loc.start.column - '('.length - ';'.length
+                        ));
+                    } else if (stmt.update) {
+                        result.push(padWhitespace(
+                            stmt.loc.start.line,
+                            'for'.length,
+                            stmt.update.loc.start.line,
+                            stmt.update.loc.start.column
+                                - '('.length - ';;'.length
+                        ));
+                    } else {
+                        // There's not enough information in the AST to
+                        // identify how many spaces should exist between 'for'
+                        // and '(;;)', so we just assume a single space
+                        result.push(space);
+                    }
+                } else {
+                    result.push(space);
+                }
+                result.push('(');
                 if (stmt.init) {
                     if (stmt.init.type === Syntax.VariableDeclaration) {
                         result.push(generateStatement(stmt.init, {allowIn: false}));
@@ -1759,7 +1927,20 @@
                 }
 
                 if (stmt.test) {
-                    result.push(space, generateExpression(stmt.test, {
+                    if (preserveLocInfo) {
+                        if (stmt.init) {
+                            result.push(padWhitespaceTo(
+                                stmt.init.loc.end.line,
+                                stmt.init.loc.end.column + 1,
+                                stmt.test.loc.start
+                            ));
+                        } else {
+                            // TODO
+                        }
+                    } else {
+                        result.push(space);
+                    }
+                    result.push(generateExpression(stmt.test, {
                         precedence: Precedence.Sequence,
                         allowIn: true,
                         allowCall: true
@@ -1769,28 +1950,83 @@
                 }
 
                 if (stmt.update) {
-                    result.push(space, generateExpression(stmt.update, {
+                    if (preserveLocInfo) {
+                        if (stmt.test) {
+                            result.push(padWhitespaceTo(
+                                stmt.test.loc.end.line,
+                                stmt.test.loc.end.column + 1,
+                                stmt.update.loc.start
+                            ));
+                        } else if (stmt.init) {
+                            result.push(padWhitespaceTo(
+                                stmt.init.loc.end.line,
+                                stmt.init.loc.end.column + 1 + ';'.length,
+                                stmt.update.loc.start
+                            ));
+                        }
+                    } else {
+                        result.push(space);
+                    }
+                    result.push(generateExpression(stmt.update, {
                         precedence: Precedence.Sequence,
                         allowIn: true,
                         allowCall: true
                     }), ')');
+
+                    if (preserveLocInfo) {
+                        result.push(padWhitespaceTo(
+                            stmt.update.loc.end.line,
+                            stmt.update.loc.end.column + 1,
+                            stmt.body.loc.start
+                        ));
+                    }
                 } else {
                     result.push(')');
                 }
-            });
+            }
+
+            if (preserveLocInfo) {
+                generateForStatement();
+            } else {
+                withIndent(generateForStatement);
+            }
 
             result.push(maybeBlock(stmt.body, semicolon === ''));
             break;
 
         case Syntax.ForInStatement:
-            result = ['for' + space + '('];
-            withIndent(function () {
+            result = ['for'];
+            if (preserveLocInfo) {
+                result.push(padWhitespaceTo(
+                    stmt.loc.start.line,
+                    stmt.loc.start.column + 4, // "for(".length === 4
+                    stmt.left.loc.start
+                ));
+            } else {
+                result.push(space);
+            }
+            result.push('(');
+
+            var generateLeftAndRight = function () {
                 if (stmt.left.type === Syntax.VariableDeclaration) {
-                    withIndent(function () {
-                        result.push(stmt.left.kind + ' ', generateStatement(stmt.left.declarations[0], {
+                    fragment = stmt.left.kind;
+                    var generateLeft = function() {
+                        result.push(fragment, generateStatement(stmt.left.declarations[0], {
                             allowIn: false
                         }));
-                    });
+                    };
+                    if (preserveLocInfo) {
+                        fragment += padWhitespace(
+                            stmt.left.loc.start.line,
+                            stmt.left.loc.start.column + stmt.left.kind.length,
+                            stmt.left.declarations[0].id.loc.start.line,
+                            stmt.left.declarations[0].id.loc.start.column
+                        );
+                        generateLeft();
+                    } else {
+                        fragment += ' ';
+                        withIndent(generateLeft);
+                    }
                 } else {
                     result.push(generateExpression(stmt.left, {
                         precedence: Precedence.Call,
@@ -1808,25 +2044,60 @@
                         allowCall: true
                     })
                 ), ')'];
-            });
+            }
+
+            if (preserveLocInfo) {
+                generateLeftAndRight();
+            } else {
+                withIndent(generateLeftAndRight);
+            }
+            if (preserveLocInfo) {
+                result.push(padWhitespaceTo(
+                    stmt.right.loc.end.line,
+                    stmt.right.loc.end.column + 1,
+                    stmt.body.loc.start
+                ));
+            }
             result.push(maybeBlock(stmt.body, semicolon === ''));
             break;
 
         case Syntax.LabeledStatement:
-            result = [stmt.label.name + ':', maybeBlock(stmt.body, semicolon === '')];
+            result = [stmt.label.name + ':'];
+            if (preserveLocInfo) {
+                result.push(padWhitespaceTo(
+                    stmt.label.loc.end.line,
+                    stmt.label.loc.end.column + 1,
+                    stmt.body.loc.start
+                ));
+            }
+            result.push(maybeBlock(stmt.body, semicolon === ''));
             break;
 
         case Syntax.Program:
             len = stmt.body.length;
-            result = [safeConcatenation && len > 0 ? '\n' : ''];
+
+            if (preserveLocInfo) {
+                result = padWhitespaceTo(1, 0, stmt.loc.start);
+            } else {
+                result = safeConcatenation && len > 0 ? '\n' : '';
+            }
+            result = [result];
             for (i = 0; i < len; i += 1) {
-                fragment = addIndent(
-                    generateStatement(stmt.body[i], {
-                        semicolonOptional: !safeConcatenation && i === len - 1,
-                        directiveContext: true
-                    })
-                );
-                result.push(fragment);
+                fragment = generateStatement(stmt.body[i], {
+                    semicolonOptional: !safeConcatenation && i === len - 1,
+                    directiveContext: true
+                });
+                if (preserveLocInfo) {
+                    result.push(fragment);
+                    if (i + 1 < len) {
+                        result.push(padWhitespaceFromTo(
+                            stmt.body[i].loc.end,
+                            stmt.body[i + 1].loc.start
+                        ));
+                    }
+                } else {
+                    result.push(addIndent(fragment));
+                }
                 if (i + 1 < len && !endsWithLineTerminator(toSourceNode(fragment).toString())) {
                     result.push(newline);
                 }
@@ -1834,7 +2105,23 @@
             break;
 
         case Syntax.FunctionDeclaration:
-            result = [(stmt.generator && !extra.moz.starlessGenerator ? 'function* ' : 'function ') + stmt.id.name, generateFunctionBody(stmt)];
+            result = [
+                (stmt.generator && !extra.moz.starlessGenerator)
+                    ? 'function*'
+                    : 'function'
+            ];
+
+            if (preserveLocInfo) {
+                result.push(padWhitespaceTo(
+                  stmt.loc.start.line,
+                  result[0].length,
+                  stmt.id.loc.start
+                ));
+            } else {
+                result.push(' ');
+            }
+
+            result.push(stmt.id.name, generateFunctionBody(stmt));
             break;
 
         case Syntax.ReturnStatement:
@@ -1942,6 +2229,7 @@
         parentheses = options.format.parentheses;
         semicolons = options.format.semicolons;
         safeConcatenation = options.format.safeConcatenation;
+        preserveLocInfo = options.format.preserveLocInfo;
         directive = options.directive;
         parse = json ? null : options.parse;
         sourceMap = options.sourceMap;
