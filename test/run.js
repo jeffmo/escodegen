@@ -35,8 +35,8 @@
         index;
 
     suites = [
-    /*
         'test',
+        'preserveLocInfo',
         'harmony',
         'moz',
         'api',
@@ -47,9 +47,7 @@
         'directive',
         'ast',
         'identity',
-        'verbatim',
-        */
-        'preserveLocInfo'
+        'verbatim'
     ];
 
     function nextTest() {

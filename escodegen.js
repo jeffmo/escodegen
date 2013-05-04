@@ -853,16 +853,25 @@
             return ';';
         }
 
+        var buildGeneratedStatement = function () {
+            generatedStmt = generateStatement(stmt, {
+                semicolonOptional: semicolonOptional,
+                functionBody: functionBody
+            });
+            if (preserveLocInfo) {
+                result.push(generatedStmt);
+            } else {
+                result.push(newline, addIndent(generatedStmt));
+            }
+        };
         generatedStmt = generateStatement(stmt, {
             semicolonOptional: semicolonOptional,
             functionBody: functionBody
         });
         if (preserveLocInfo) {
-            result.push(generatedStmt);
+            buildGeneratedStatement();
         } else {
-            withIndent(function () {
-                result.push(newline, addIndent(generatedStmt));
-            });
+            withIndent(buildGeneratedStatement);
         }
 
         return result;
@@ -1925,9 +1934,6 @@
                                 stmt.alternate.loc.start.line,
                                 stmt.alternate.loc.start.column - 'else '.length
                             ), 'else ');
-                            if (stmt.alternate.type === Syntax.ExpressionStatement) {
-
-                            }
                         }
                         result.push(fragment);
                     } else {

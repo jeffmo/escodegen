@@ -354,28 +354,38 @@ function compare(input, expected) {
   ast = esprima.parse(input, {loc: true});
   generatedCode = escodegen.generate(ast, {format: {preserveLocInfo: true}});
   if (generatedCode !== expected) {
-    throw new Error(
-      'Expected:\n' +
-      expected.replace(/ /g, '_') +
-      '\ngot:\n' +
-      generatedCode.replace(/ /g, '_'));
+    return 'Expected:\n' +
+           expected.replace(/ /g, '_') +
+           '\ngot:\n' +
+           generatedCode.replace(/ /g, '_');
   }
 }
 
 (function() {
   'use strict';
-  var category, fixture, i, il, subcategory, test;
+  var category, fixture, i, il, numFailures = 0, numTests = 0, result,
+      subcategory, test, timer;
 
+  timer = Date.now();
   for (category in fixtures) {
     for (subcategory in fixtures[category]) {
       for (i = 0, il = fixtures[category][subcategory].length; i < il; i++) {
         fixture = fixtures[category][subcategory][i];
+        numTests++;
         if (Object.prototype.toString.call(fixture) == '[object Array]') {
-          compare(fixture[0], fixture[1]);
+          result = compare(fixture[0], fixture[1]);
         } else {
-          compare(fixture);
+          result = compare(fixture);
+        }
+        if (result) {
+          console.error('\n' + result);
+          numFailures++;
         }
       }
     }
   }
+  timer = Date.now() - timer;
+  console.log(
+      numTests + ' tests. ' + numFailures + ' failures. ' + timer + ' ms'
+  );
 }())
