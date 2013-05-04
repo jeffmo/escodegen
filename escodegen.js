@@ -788,7 +788,7 @@
         return text;
     }
 
-    function padWhitespace(/*text, */startLine, startCol, endLine, endCol) {
+    function padWhitespace(startLine, startCol, endLine, endCol) {
       var whitespace = '', i;
       for (i = startLine; i < endLine; i++) {
           whitespace += '\n';
@@ -803,12 +803,10 @@
         }
       }
       return whitespace;
-//      return text + whitespace;
     }
 
-    function padWhitespaceFrom(/*text, */startLoc, endLine, endCol) {
+    function padWhitespaceFrom(startLoc, endLine, endCol) {
       return padWhitespace(
-//        text,
         startLoc.line,
         startLoc.column,
         endLine,
@@ -816,9 +814,8 @@
       );
     }
 
-    function padWhitespaceTo(/*text, */startLine, startCol, endLoc) {
+    function padWhitespaceTo(startLine, startCol, endLoc) {
       return padWhitespace(
-//        text,
         startLine,
         startCol,
         endLoc.line,
@@ -826,9 +823,8 @@
       );
     }
 
-    function padWhitespaceFromTo(/*text, */startLoc, endLoc) {
+    function padWhitespaceFromTo(startLoc, endLoc) {
       return padWhitespace(
-//        text,
         startLoc.line,
         startLoc.column,
         endLoc.line,
@@ -2003,8 +1999,6 @@
                                 stmt.init.loc.end.column + 1,
                                 stmt.test.loc.start
                             ));
-                        } else {
-                            // TODO
                         }
                     } else {
                         result.push(space);

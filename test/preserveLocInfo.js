@@ -199,31 +199,31 @@ var fixtures = {
     ],
 
     'multi line for': [
-      'for(var i = 0; i < 10; i++){\n' +
+      'for (var i = 0; i < 10; i++){\n' +
       '}',
 
-      'for(var i = 0; i < 10; i++) {\n' +
+      'for (var i = 0; i < 10; i++) {\n' +
       '}',
 
-      'for(var i = 0; i < 10; i++) {\n' +
+      'for (var i = 0; i < 10; i++) {\n' +
       '\n' +
       '}',
 
-      'for(var i = 0; i < 10; i++) {\n' +
+      'for (var i = 0; i < 10; i++) {\n' +
       '  var a = 1;\n' +
       '}',
 
-      'for(var i = 0; i < 10; i++) {\n' +
+      'for (var i = 0; i < 10; i++) {\n' +
       '\n' +
       '  var a = 1;\n' +
       '}',
 
-      'for(var i = 0; i < 10; i++) {\n' +
+      'for (var i = 0; i < 10; i++) {\n' +
       '  var a = 1;\n' +
       '\n' +
       '}',
 
-      'for(var i = 0; i < 10; i++) {\n' +
+      'for (var i = 0; i < 10; i++) {\n' +
       '\n' +
       '  var a = 1;\n' +
       '\n' +
@@ -378,8 +378,12 @@ function compare(input, expected) {
           result = compare(fixture);
         }
         if (result) {
-          console.error('\n' + result);
-          numFailures++;
+          if (require.main === module) {
+            throw new Error(result);
+          } else {
+            console.error('\n' + result);
+            numFailures++;
+          }
         }
       }
     }
