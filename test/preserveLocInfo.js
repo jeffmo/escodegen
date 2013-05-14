@@ -437,6 +437,178 @@ var fixtures = {
       '    \'blah\';\n' +
       '}'
     ]
+  },
+
+  'TryStatement': {
+    'single line try-catch': [
+      'try{\'foo\';}catch(e){\'bar\';}',
+      'try {\'foo\';}catch(e){\'bar\';}',
+      'try { \'foo\';}catch(e){\'bar\';}',
+      'try { \'foo\'; }catch(e){\'bar\';}',
+      'try { \'foo\'; } catch(e){\'bar\';}',
+      'try { \'foo\'; } catch (e){\'bar\';}',
+      'try { \'foo\'; } catch (e) {\'bar\';}',
+      'try { \'foo\'; } catch (e) { \'bar\';}',
+      'try { \'foo\'; } catch (e) { \'bar\'; }',
+    ],
+
+    'single line try-finally': [
+      'try{\'foo\';} finally {\'bar\';}',
+      'try {\'foo\';} finally {\'bar\';}',
+      'try { \'foo\';} finally {\'bar\';}',
+      'try { \'foo\'; } finally {\'bar\';}',
+      'try { \'foo\'; } finally { \'bar\';}',
+      'try { \'foo\'; } finally { \'bar\'; }',
+    ],
+
+    'single line try-catch-finally': [
+      'try{\'foo\';}catch(e){\'bar\';} finally {\'baz\';}',
+      'try {\'foo\';}catch(e){\'bar\';} finally {\'baz\';}',
+      'try { \'foo\';}catch(e){\'bar\';} finally {\'baz\';}',
+      'try { \'foo\'; } catch(e){\'bar\';} finally {\'baz\';}',
+      'try { \'foo\'; } catch (e){\'bar\';} finally {\'baz\';}',
+      'try { \'foo\'; } catch (e) {\'bar\';} finally {\'baz\';}',
+      'try { \'foo\'; } catch (e) { \'bar\'; } finally {\'baz\';}',
+      'try { \'foo\'; } catch (e) { \'bar\'; } finally { \'baz\';}',
+      'try { \'foo\'; } catch (e) { \'bar\'; } finally { \'baz\'; }',
+    ],
+
+    'multi line try-catch': [
+      'try{\n' +
+      '\'foo\';\n' +
+      '}catch(e){\n' +
+      '\'bar\';\n' +
+      '}',
+
+      'try {\n' +
+      '\'foo\';\n' +
+      '}catch(e){\n' +
+      '\'bar\';\n' +
+      '}',
+
+      'try {\n' +
+      '  \'foo\';\n' +
+      '}catch(e){\n' +
+      '\'bar\';\n' +
+      '}',
+
+      'try {\n' +
+      '  \'foo\';\n' +
+      '} catch(e){\n' +
+      '\'bar\';\n' +
+      '}',
+
+      'try {\n' +
+      '  \'foo\';\n' +
+      '}\n' +
+      'catch(e){\n' +
+      '\'bar\';\n' +
+      '}',
+
+      'try {\n' +
+      '  \'foo\';\n' +
+      '} catch(e) {\n' +
+      '\'bar\';\n' +
+      '}',
+
+      'try {\n' +
+      '  \'foo\';\n' +
+      '} catch(e) {\n' +
+      '  \'bar\';\n' +
+      '}',
+    ],
+
+    'multi line try-finally': [
+      'try{\n' +
+      '\'foo\';\n' +
+      '} finally {\n' +
+      '\'bar\';\n' +
+      '}',
+
+      'try {\n' +
+      '\'foo\';\n' +
+      '} finally {\n' +
+      '\'bar\';\n' +
+      '}',
+
+      'try {\n' +
+      '  \'foo\';\n' +
+      '} finally {\n' +
+      '\'bar\';\n' +
+      '}',
+
+      'try {\n' +
+      '  \'foo\';\n' +
+      '} finally {\n' +
+      '  \'bar\';\n' +
+      '}'
+    ],
+
+    'multi line try-catch-finally': [
+      'try{\n' +
+      '\'foo\';\n' +
+      '}catch(e){\n' +
+      '\'bar\';\n' +
+      '} finally {\n' +
+      '\'baz\';\n' +
+      '}',
+
+      'try {\n' +
+      '\'foo\';\n' +
+      '}catch(e){\n' +
+      '\'bar\';\n' +
+      '} finally {\n' +
+      '\'baz\';\n' +
+      '}',
+
+      'try {\n' +
+      '  \'foo\';\n' +
+      '}catch(e){\n' +
+      '\'bar\';\n' +
+      '} finally {\n' +
+      '\'baz\';\n' +
+      '}',
+
+      'try {\n' +
+      '  \'foo\';\n' +
+      '} catch(e){\n' +
+      '\'bar\';\n' +
+      '} finally {\n' +
+      '\'baz\';\n' +
+      '}',
+
+      'try {\n' +
+      '  \'foo\';\n' +
+      '} catch (e){\n' +
+      '\'bar\';\n' +
+      '} finally {\n' +
+      '\'baz\';\n' +
+      '}',
+
+      'try {\n' +
+      '  \'foo\';\n' +
+      '} catch (e) {\n' +
+      '\'bar\';\n' +
+      '} finally {\n' +
+      '\'baz\';\n' +
+      '}',
+
+      'try {\n' +
+      '  \'foo\';\n' +
+      '} catch (e) {\n' +
+      '  \'bar\';\n' +
+      '} finally {\n' +
+      '\'baz\';\n' +
+      '}',
+
+      'try {\n' +
+      '  \'foo\';\n' +
+      '} catch (e) {\n' +
+      '  \'bar\';\n' +
+      '} finally {\n' +
+      '  \'baz\';\n' +
+      '}'
+    ]
   }
 };
 

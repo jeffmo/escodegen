@@ -1673,17 +1673,40 @@
             break;
 
         case Syntax.CatchClause:
-            withIndent(function () {
-                result = [
-                    'catch' + space + '(',
-                    generateExpression(stmt.param, {
-                        precedence: Precedence.Sequence,
-                        allowIn: true,
-                        allowCall: true
-                    }),
-                    ')'
-                ];
-            });
+            var generateCatchClause = function() {
+                result = ['catch'];
+                if (preserveLocInfo) {
+                    result.push(padWhitespace(
+                        stmt.loc.start.line,
+                        stmt.loc.start.column + 'catch'.length,
+                        stmt.param.loc.start.line,
+                        stmt.param.loc.start.column - '('.length
+                    ));
+                } else {
+                    result.push(space);
+                }
+                result.push('(');
+                result.push(generateExpression(stmt.param, {
+                    precedence: Precedence.Sequence,
+                    allowIn: true,
+                    allowCall: true
+                }));
+                result.push(')');
+
+                if (preserveLocInfo) {
+                    result.push(padWhitespace(
+                        stmt.param.loc.end.line,
+                        stmt.param.loc.end.column + ')'.length,
+                        stmt.body.loc.start.line,
+                        stmt.body.loc.start.column
+                    ));
+                }
+            };
+            if (preserveLocInfo) {
+                generateCatchClause();
+            } else {
+                withIndent(generateCatchClause);
+            }
             result.push(maybeBlock(stmt.body));
             break;
 
@@ -1785,16 +1808,49 @@
             break;
 
         case Syntax.TryStatement:
-            result = ['try', maybeBlock(stmt.block)];
+            result = ['try'];
+            if (preserveLocInfo) {
+                result.push(padWhitespaceTo(
+                    stmt.loc.start.line,
+                    stmt.loc.start.column + 'try'.length,
+                    stmt.block.loc.start
+                ));
+            }
+            result.push(maybeBlock(stmt.block));
             result = maybeBlockSuffix(stmt.block, result);
             for (i = 0, len = stmt.handlers.length; i < len; i += 1) {
-                result = join(result, generateStatement(stmt.handlers[i]));
+                fragment = generateStatement(stmt.handlers[i]);
+                if (preserveLocInfo) {
+                    result.push(padWhitespace(
+                        stmt.block.loc.end.line,
+                        stmt.block.loc.end.column,
+                        stmt.handlers[i].loc.start.line,
+                        stmt.handlers[i].loc.start.column
+                    ));
+                }
+                result.push(fragment);
                 if (stmt.finalizer || i + 1 !== len) {
                     result = maybeBlockSuffix(stmt.handlers[i].body, result);
                 }
             }
             if (stmt.finalizer) {
-                result = join(result, ['finally', maybeBlock(stmt.finalizer)]);
+                if (stmt.handlers.length > 0) {
+                    result.push(padWhitespace(
+                        stmt.handlers[stmt.handlers.length - 1].loc.end.line,
+                        stmt.handlers[stmt.handlers.length - 1].loc.end.column,
+                        stmt.finalizer.loc.start.line,
+                        stmt.finalizer.loc.start.column - 'finally '.length
+                    ));
+                } else {
+                    result.push(padWhitespace(
+                        stmt.block.loc.end.line,
+                        stmt.block.loc.end.column,
+                        stmt.finalizer.loc.start.line,
+                        stmt.finalizer.loc.start.column - 'finally '.length
+                    ));
+                }
+                result.push('finally ');
+                result.push(maybeBlock(stmt.finalizer));
             }
             break;
 
