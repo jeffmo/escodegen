@@ -342,6 +342,101 @@ var fixtures = {
       '  c;\n' +
       '}'
     ]
+  },
+
+  'SwitchStatement': {
+    'single line switch statement': [
+      'switch(1){}',
+      'switch (1){}',
+      'switch (1) {}',
+      'switch (1) {}',
+      'switch (1){case 1:\'foo\';\'bar\';case 2:\'baz\';default:\'blah\';}',
+      'switch (1) {case 1:\'foo\';\'bar\';case 2:\'baz\';default:\'blah\';}',
+      'switch (1) {case 1: \'foo\';\'bar\';case 2:\'baz\';default:\'blah\';}',
+      'switch (1) {case 1: \'foo\'; \'bar\';case 2:\'baz\';default:\'blah\';}',
+      'switch (1) {case 1: \'foo\'; \'bar\'; case 2:\'baz\';default:\'blah\';}',
+      'switch (1) {case 1: \'foo\'; \'bar\'; case 2: \'baz\';default:\'blah\';}',
+      'switch (1) {case 1: \'foo\'; \'bar\'; case 2: \'baz\'; default:\'blah\';}',
+      'switch (1) {case 1: \'foo\'; \'bar\'; case 2: \'baz\'; default: \'blah\';}',
+      'switch (1) {case 1: \'foo\'; \'bar\'; case 2: \'baz\'; default: \'blah\'; }',
+      'switch (1) {default:\'foo\';}',
+      'switch (1) {default: \'foo\'; }'
+    ],
+
+    'multi line switch statement': [
+      'switch(1) {\n' +
+      '}',
+
+      'switch (1) {\n' +
+      '}',
+
+      'switch (1) {\n' +
+      ' }',
+
+      'switch (1) {\n' +
+      'case 1:\'foo\';\'bar\';\n' +
+      'case 2:\'baz\';\n' +
+      'default:\'blah\';\n' +
+      '}',
+
+      'switch (1) {\n' +
+      '  case 1:\'foo\';\'bar\';\n' +
+      'case 2:\'baz\';\n' +
+      'default:\'blah\';\n' +
+      '}',
+
+      'switch (1) {\n' +
+      '  case 1:\n' +
+      '    \'foo\';\'bar\';\n' +
+      'case 2:\'baz\';\n' +
+      'default:\'blah\';\n' +
+      '}',
+
+      'switch (1) {\n' +
+      '  case 1:\n' +
+      '    \'foo\';\'bar\';\n' +
+      '  case 2:\'baz\';\n' +
+      'default:\'blah\';\n' +
+      '}',
+
+      'switch (1) {\n' +
+      '  case 1:\n' +
+      '    \'foo\';\'bar\';\n' +
+      '  case 2:\n' +
+      '    \'baz\';\n' +
+      'default:\'blah\';\n' +
+      '}',
+
+      'switch (1) {\n' +
+      '  case 1:\n' +
+      '    \'foo\';\'bar\';\n' +
+      '  case 2:\n' +
+      '    \'baz\';\n' +
+      '  default:\'blah\';\n' +
+      '}',
+
+      'switch (1) {\n' +
+      '  case 1:\n' +
+      '    \'foo\';\'bar\';\n' +
+      '  case 2:\n' +
+      '    \'baz\';\n' +
+      '  default:\n' +
+      '    \'blah\';\n' +
+      '}',
+
+      'switch (1) {\n' +
+      'default:\'blah\';\n' +
+      '}',
+
+      'switch (1) {\n' +
+      '  default:\'blah\';\n' +
+      '}',
+
+      'switch (1) {\n' +
+      '  default:\n' +
+      '    \'blah\';\n' +
+      '}'
+    ]
   }
 };
 
@@ -378,12 +473,9 @@ function compare(input, expected) {
           result = compare(fixture);
         }
         if (result) {
-          if (require.main === module) {
-            throw new Error(result);
-          } else {
-            console.error('\n' + result);
-            numFailures++;
-          }
+          console.error('\n' + result);
+          numFailures++;
+          throw new Error();
         }
       }
     }

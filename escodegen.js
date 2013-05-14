@@ -1799,40 +1799,140 @@
             break;
 
         case Syntax.SwitchStatement:
-            withIndent(function () {
-                result = [
-                    'switch' + space + '(',
+            var generateSwitchStatement = function () {
+                result = [];
+                result.push('switch');
+                if (preserveLocInfo) {
+                    result.push(padWhitespaceTo(
+                        stmt.loc.start.line,
+                        stmt.loc.start.column + 'switch('.length,
+                        stmt.discriminant.loc.start
+                    ));
+                } else {
+                    result.push(space);
+                };
+                result.push(
+                    '(',
                     generateExpression(stmt.discriminant, {
                         precedence: Precedence.Sequence,
                         allowIn: true,
                         allowCall: true
                     }),
-                    ')' + space + '{' + newline
-                ];
-            });
+                    ')'
+                );
+
+                if (preserveLocInfo) {
+                    // Spaces between closing discriminant paren and
+                    // opening case body curly
+                    if (stmt.cases) {
+                        if (stmt.cases[0].loc.start.line
+                            === stmt.discriminant.loc.end.line) {
+                            result.push(padWhitespace(
+                                stmt.discriminant.loc.end.line,
+                                stmt.discriminant.loc.end.column + ')'.length,
+                                stmt.cases[0].loc.start.line,
+                                stmt.cases[0].loc.start.column - '{'.length
+                            ));
+                        } else {
+                            result.push(space);
+                        }
+                    } else {
+                        if (stmt.loc.end.line
+                            === stmt.discriminant.loc.end.line) {
+                            result.push(padWhitespace(
+                                stmt.discriminant.loc.end.line,
+                                stmt.discriminant.loc.end.column + ')'.length,
+                                stmt.discriminant.loc.end.line,
+                                stmt.loc.end.column - '{}'.length
+                            ));
+                        } else {
+                            result.push(space);
+                        }
+                    }
+                } else {
+                    result.push(space);
+                }
+                result.push('{');
+
+                if (preserveLocInfo) {
+                    if (stmt.cases) {
+                        result.push(padWhitespaceTo(
+                            stmt.discriminant.loc.end.line,
+                            stmt.discriminant.loc.end.column + ') {'.length,
+                            stmt.cases[0].loc.start
+                        ));
+                    } else {
+                        result.push(padWhitespace(
+                            stmt.discriminant.loc.end.line,
+                            stmt.discriminant.loc.end.column + ') {'.length,
+                            stmt.loc.end.line,
+                            stmt.loc.end.column - '}'.length
+                        ));
+                    }
+                } else {
+                    result.push(newline);
+                }
+            };
+            if (preserveLocInfo) {
+                generateSwitchStatement();
+            } else {
+                withIndent(generateSwitchStatement);
+            }
             if (stmt.cases) {
                 for (i = 0, len = stmt.cases.length; i < len; i += 1) {
-                    fragment = addIndent(generateStatement(stmt.cases[i], {semicolonOptional: i === len - 1}));
+                    fragment = generateStatement(stmt.cases[i], {
+                        semicolonOptional: i === len - 1,
+                        previousStmt: i === 0 ? null : stmt.cases[i - 1]
+                    });
+                    if (!preserveLocInfo) {
+                        fragment = addIndent(fragment);
+                    }
                     result.push(fragment);
-                    if (!endsWithLineTerminator(toSourceNode(fragment).toString())) {
+                    if (preserveLocInfo) {
+                        if (i + 1 === len) {
+                            result.push(padWhitespace(
+                                stmt.cases[i].loc.end.line,
+                                stmt.cases[i].loc.end.column,
+                                stmt.loc.end.line,
+                                stmt.loc.end.column - '}'.length
+                            ));
+                        } else {
+                            result.push(padWhitespaceFromTo(
+                                stmt.cases[i].loc.end,
+                                stmt.cases[i + 1].loc.start
+                            ));
+                        }
+                    } else if (!endsWithLineTerminator(toSourceNode(fragment).toString())) {
                         result.push(newline);
                     }
                 }
             }
-            result.push(addIndent('}'));
+
+            if (preserveLocInfo) {
+                result.push('}');
+            } else {
+                result.push(addIndent('}'));
+            }
             break;
 
         case Syntax.SwitchCase:
-            withIndent(function () {
+            var generateSwitchCase = function() {
+                result = [];
                 if (stmt.test) {
-                    result = [
-                        join('case', generateExpression(stmt.test, {
-                            precedence: Precedence.Sequence,
-                            allowIn: true,
-                            allowCall: true
-                        })),
-                        ':'
-                    ];
+                    result.push('case');
+                    if (preserveLocInfo) {
+                        result.push(padWhitespace(
+                            stmt.loc.start.line,
+                            stmt.loc.start.column + 'case'.length,
+                            stmt.test.loc.start.line,
+                            stmt.test.loc.start.column
+                        ));
+                    }
+                    result.push(generateExpression(stmt.test, {
+                        precedence: Precedence.Sequence,
+                        allowIn: true,
+                        allowCall: true
+                    }), ':');
                 } else {
                     result = ['default:'];
                 }
@@ -1840,23 +1940,57 @@
                 i = 0;
                 len = stmt.consequent.length;
                 if (len && stmt.consequent[0].type === Syntax.BlockStatement) {
-                    fragment = maybeBlock(stmt.consequent[0]);
-                    result.push(fragment);
+                    result.push(maybeBlock(stmt.consequent[0]));
                     i = 1;
                 }
 
-                if (i !== len && !endsWithLineTerminator(toSourceNode(result).toString())) {
+                if (preserveLocInfo) {
+                    if (stmt.test) {
+                        result.push(padWhitespaceTo(
+                            stmt.test.loc.end.line,
+                            stmt.test.loc.end.column + ':'.length,
+                            stmt.consequent[0].loc.start
+                        ));
+                    } else { // "default:" (instead of "case:")
+                        result.push(padWhitespaceTo(
+                            stmt.loc.start.line,
+                            stmt.loc.start.column + 'default:'.length,
+                            stmt.consequent[0].loc.start
+                        ));
+                    }
+                } else if (i !== len
+                           && !endsWithLineTerminator(toSourceNode(result).toString())) {
                     result.push(newline);
                 }
 
                 for (; i < len; i += 1) {
-                    fragment = addIndent(generateStatement(stmt.consequent[i], {semicolonOptional: i === len - 1 && semicolon === ''}));
+                    fragment = generateStatement(
+                        stmt.consequent[i],
+                        {semicolonOptional: i === len - 1 && semicolon === ''}
+                    );
+                    if (!preserveLocInfo) {
+                        fragment = addIndent(fragment);
+                    }
                     result.push(fragment);
-                    if (i + 1 !== len && !endsWithLineTerminator(toSourceNode(fragment).toString())) {
-                        result.push(newline);
+                    if (i + 1 !== len) {
+                        if (preserveLocInfo) {
+                            result.push(padWhitespace(
+                                stmt.consequent[i].loc.end.line,
+                                stmt.consequent[i].loc.end.column,
+                                stmt.consequent[i + 1].loc.start.line,
+                                stmt.consequent[i + 1].loc.start.column
+                            ));
+                        } else if (!endsWithLineTerminator(toSourceNode(fragment).toString())) {
+                            result.push(newline);
+                        }
                     }
                 }
-            });
+            };
+            if (preserveLocInfo) {
+                generateSwitchCase();
+            } else {
+                withIndent(generateSwitchCase());
+            }
             break;
 
         case Syntax.IfStatement:
